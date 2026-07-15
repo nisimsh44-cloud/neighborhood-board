@@ -1,0 +1,11 @@
+# Python virtual environments
+backend/venv/
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# SQLite database
+backend/instance/
+instance/
+*.db
