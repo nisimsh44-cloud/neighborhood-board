@@ -1,5 +1,5 @@
 from flask import Flask, jsonify
-from database import db  # ייבוא ה-db המשותף
+from database import db  
 import os
 
 app = Flask(__name__)
@@ -10,13 +10,13 @@ instance_path = os.path.join(basedir, 'instance')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(instance_path, 'database.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# שורת הקסם: יוצרת את תיקיית instance אם היא עדיין לא קיימת פיזית בדיסק
+#  יצירת את תיקיית instance 
 os.makedirs(instance_path, exist_ok=True)
 
 # אתחול ה-Database עם האפליקציה
 db.init_app(app)
 
-# כעת אפשר לייבא את המודלים בבטחה - אין יותר מעגליות!
+# מייבא את המודלים 
 from models import User, Post
 
 # יצירת הטבלאות בתוך ה-Database
@@ -40,7 +40,7 @@ def get_posts():
             "title": post.title,
             "content": post.content,
             "created_at": post.created_at.strftime('%Y-%m-%d %H:%M:%S') if post.created_at else None,
-            "author": post.author.username  # בזכות ה-relationship, אנחנו יכולים לגשת ישירות לשם של כותב הפוסט!
+            "author": post.author.username  # גישה ישירות לשם של כותב הפוסט
         })
         
     return jsonify(posts_list)

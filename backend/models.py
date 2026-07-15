@@ -1,5 +1,4 @@
 from datetime import datetime
-# משנים את השורה הזו בלבד:
 from database import db
 
 class User(db.Model):
