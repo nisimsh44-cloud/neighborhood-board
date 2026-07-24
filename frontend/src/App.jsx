@@ -3,17 +3,17 @@ import './App.css';
 
 function App() {
   const [posts, setPosts] = useState([]);
+  const [users, setUsers] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('הכל');
   const [isRegistering, setIsRegistering] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState('');
+  const [userRole, setUserRole] = useState('user');
   const [message, setMessage] = useState('');
   
-  // מזהה המודעה שנמצאת במצב עריכה כרגע
   const [editingPostId, setEditingPostId] = useState(null);
   const [editFormData, setEditFormData] = useState({ title: '', content: '', category: 'כללי' });
 
-  // נתוני טופס הרשמה / התחברות
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -21,7 +21,6 @@ function App() {
     role: 'user'
   });
 
-  // נתוני טופס מודעה חדשה
   const [newPost, setNewPost] = useState({
     title: '',
     content: '',
@@ -32,6 +31,12 @@ function App() {
     fetchPosts();
   }, []);
 
+  useEffect(() => {
+    if (isLoggedIn && userRole === 'admin') {
+      fetchUsers();
+    }
+  }, [isLoggedIn, userRole]);
+
   const fetchPosts = async () => {
     try {
       const res = await fetch('http://127.0.0.1:5000/api/posts');
@@ -39,6 +44,18 @@ function App() {
       setPosts(data);
     } catch (err) {
       console.error('שגיאה בטעינת המודעות:', err);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch(`http://127.0.0.1:5000/api/users?username=${currentUser}`);
+      const data = await res.json();
+      if (res.ok) {
+        setUsers(data);
+      }
+    } catch (err) {
+      console.error('שגיאה בטעינת המשתמשים:', err);
     }
   };
 
@@ -70,6 +87,7 @@ function App() {
         if (!isRegistering) {
           setIsLoggedIn(true);
           setCurrentUser(data.username);
+          setUserRole(data.role || 'user');
           localStorage.setItem('token', data.access_token);
         }
       } else {
@@ -108,7 +126,6 @@ function App() {
     }
   };
 
-  // מחיקת מודעה
   const handleDeletePost = async (postId) => {
     if (!window.confirm('האם אתה בטוח שברצונך למחוק מודעה זו?')) return;
 
@@ -132,7 +149,51 @@ function App() {
     }
   };
 
-  // התחלת מצב עריכה
+  const handleToggleBlockUser = async (targetUser) => {
+    try {
+      const response = await fetch(`http://127.0.0.1:5000/api/users/${targetUser}/toggle-block`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: currentUser })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage(data.message);
+        fetchUsers();
+      } else {
+        setMessage(data.error || 'אירעה שגיאה בשינוי סטטוס המשתמש');
+      }
+    } catch (err) {
+      setMessage('שגיאת תקשורת עם השרת');
+    }
+  };
+
+  const handleDeleteUser = async (targetUser) => {
+    if (!window.confirm(`האם אתה בטוח שברצונך למחוק את המשתמש ${targetUser}?`)) return;
+
+    try {
+      const response = await fetch(`http://127.0.0.1:5000/api/users/${targetUser}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: currentUser })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage(data.message);
+        fetchUsers();
+        fetchPosts(); // לרענן מודעות למקרה שלמשתמש שנמחק היו מודעות
+      } else {
+        setMessage(data.error || 'אירעה שגיאה במחיקת המשתמש');
+      }
+    } catch (err) {
+      setMessage('שגיאת תקשורת עם השרת');
+    }
+  };
+
   const handleStartEdit = (post) => {
     setEditingPostId(post.id);
     setEditFormData({
@@ -142,7 +203,6 @@ function App() {
     });
   };
 
-  // שמירת עריכה
   const handleSaveEdit = async (postId) => {
     try {
       const response = await fetch(`http://127.0.0.1:5000/api/posts/${postId}`, {
@@ -171,6 +231,8 @@ function App() {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setCurrentUser('');
+    setUserRole('user');
+    setUsers([]);
     localStorage.removeItem('token');
     setMessage('התנתקת בהצלחה!');
   };
@@ -187,13 +249,79 @@ function App() {
         <h1>📢 לוח מודעות שכונתי</h1>
         {isLoggedIn && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <span>שלום, <strong>{currentUser}</strong>! 👋</span>
+            <span>
+              שלום, <strong>{currentUser}</strong>! {userRole === 'admin' && <span style={{ color: 'red', fontWeight: 'bold' }}>(מנהל 🛡️)</span>} 👋
+            </span>
             <button onClick={handleLogout} style={{ padding: '8px 16px', cursor: 'pointer', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px' }}>
               התנתק
             </button>
           </div>
         )}
       </header>
+
+      {/* פאנל ניהול אדמין לניהול משתמשים */}
+      {isLoggedIn && userRole === 'admin' && (
+        <div style={{ border: '2px solid #dc3545', padding: '20px', borderRadius: '8px', marginBottom: '30px', backgroundColor: '#fff5f5' }}>
+          <h2>🛡️ פאנל ניהול משתמשים (Admin Only)</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+            <thead>
+              <tr style={{ backgroundColor: '#ffe3e3', textAlign: 'right' }}>
+                <th style={{ padding: '8px', border: '1px solid #ddd' }}>משתמש</th>
+                <th style={{ padding: '8px', border: '1px solid #ddd' }}>אימייל</th>
+                <th style={{ padding: '8px', border: '1px solid #ddd' }}>תפקיד</th>
+                <th style={{ padding: '8px', border: '1px solid #ddd' }}>סטטוס</th>
+                <th style={{ padding: '8px', border: '1px solid #ddd' }}>פעולות</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u.username} style={{ backgroundColor: u.is_blocked ? '#ffe6e6' : '#fff' }}>
+                  <td style={{ padding: '8px', border: '1px solid #ddd' }}><strong>{u.username}</strong></td>
+                  <td style={{ padding: '8px', border: '1px solid #ddd' }}>{u.email}</td>
+                  <td style={{ padding: '8px', border: '1px solid #ddd' }}>{u.role}</td>
+                  <td style={{ padding: '8px', border: '1px solid #ddd', color: u.is_blocked ? 'red' : 'green', fontWeight: 'bold' }}>
+                    {u.is_blocked ? '🚫 חסום' : '✅ פעיל'}
+                  </td>
+                  <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                    {u.username !== currentUser && (
+                      <div style={{ display: 'flex', gap: '5px' }}>
+                        <button
+                          onClick={() => handleToggleBlockUser(u.username)}
+                          style={{
+                            padding: '4px 8px',
+                            backgroundColor: u.is_blocked ? '#28a745' : '#ffc107',
+                            color: u.is_blocked ? '#fff' : '#000',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                          }}
+                        >
+                          {u.is_blocked ? '🔓 בטל חסימה' : '🚫 חסום'}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(u.username)}
+                          style={{
+                            padding: '4px 8px',
+                            backgroundColor: '#dc3545',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                          }}
+                        >
+                          🗑️ מחק
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* טופס התחברות / הרשמה */}
       {!isLoggedIn ? (
@@ -299,7 +427,6 @@ function App() {
       <section>
         <h2>📋 מודעות אחרונות</h2>
 
-        {/* סרגל סינון קטגוריות */}
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
           <span>סינון לפי קטגוריה:</span>
           {categories.map((category) => (
@@ -322,7 +449,6 @@ function App() {
           ))}
         </div>
 
-        {/* רשימת המודעות המסוננות */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           {filteredPosts.length === 0 ? (
             <p>אין מודעות בקטגוריה זו.</p>
@@ -330,7 +456,6 @@ function App() {
             filteredPosts.map((post) => (
               <div key={post.id} style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '15px', backgroundColor: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                 
-                {/* מצב עריכה עבור מודעה זו */}
                 {editingPostId === post.id ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <input
@@ -363,7 +488,6 @@ function App() {
                     </div>
                   </div>
                 ) : (
-                  /* תצוגה רגילה של המודעה */
                   <>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <h3 style={{ margin: '0 0 10px 0' }}>{post.title}</h3>
@@ -375,20 +499,21 @@ function App() {
                     <div style={{ fontSize: '12px', color: '#666', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>פורסם על ידי: <strong>{post.author}</strong> ({post.created_at})</span>
                       
-                      {/* כפתורי עריכה ומחיקה יופיעו רק אם המשתמש המחובר הוא היוצר */}
-                      {isLoggedIn && currentUser === post.author && (
+                      {isLoggedIn && (currentUser === post.author || userRole === 'admin') && (
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          <button
-                            onClick={() => handleStartEdit(post)}
-                            style={{ backgroundColor: '#ffc107', color: '#000', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
-                          >
-                            ✏️ ערוך
-                          </button>
+                          {(currentUser === post.author || userRole === 'admin') && (
+                            <button
+                              onClick={() => handleStartEdit(post)}
+                              style={{ backgroundColor: '#ffc107', color: '#000', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
+                            >
+                              ✏️ ערוך
+                            </button>
+                          )}
                           <button
                             onClick={() => handleDeletePost(post.id)}
                             style={{ backgroundColor: '#dc3545', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
                           >
-                            🗑️ מחק
+                            🗑️ מחק {userRole === 'admin' && currentUser !== post.author ? '(אדמין)' : ''}
                           </button>
                         </div>
                       )}
