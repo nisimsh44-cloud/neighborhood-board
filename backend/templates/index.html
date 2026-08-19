@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl" id="htmlRoot">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="pageTitle">Neighborhood Board | לוח שכונתי מתקדם</title>
+    <link id="bootstrapCSS" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Heebo', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        /* אנימציית תנועה מודרנית ואיטית לתמונת הרקע */
+        @keyframes kenBurns {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.08);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .hero-section {
+            position: relative;
+            overflow: hidden;
+            color: #ffffff;
+            padding: 130px 0;
+            border-radius: 0 0 2rem 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background-image: url("{{ url_for('static', filename='midrachov.jpg') }}");
+            background-size: cover;
+            background-position: center center;
+            animation: kenBurns 20s infinite alternate ease-in-out;
+        }
+
+        .hero-section h1, 
+        .hero-section p {
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+        }
+
+        .hero-section .container {
+            position: relative;
+            z-index: 2;
+        }
+
+        .card {
+            border: none;
+            border-radius: 1rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.08);
+        }
+        .navbar {
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- תפריט ניווט -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="#">🌐 Neighborhood Board</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item"><a class="nav-link active" href="#" data-i18n="navHome">דף הבית</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#cards-section" data-i18n="navBoard">לוח מודעות</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" data-i18n="navEvents">אירועים</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" data-i18n="navMutualAid">עזרה הדדית</a></li>
+                    
+                    <!-- בחירת שפה -->
+                    <li class="nav-item dropdown mx-2">
+                        <select id="languageSelect" class="form-select form-select-sm rounded-pill border-primary text-primary fw-bold" onchange="changeLanguage(this.value)">
+                            <option value="he">🇮🇱 עברית</option>
+                            <option value="en">🇬🇧 English</option>
+                            <option value="ru">🇷🇺 Русский</option>
+                        </select>
+                    </li>
+
+                    <div id="auth-buttons" class="d-flex gap-2 ms-3">
+                        <button class="btn btn-outline-primary btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#loginModal" data-i18n="btnLogin">התחברות</button>
+                        <button class="btn btn-primary btn-sm text-white rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#registerModal" data-i18n="btnRegister">הרשמה</button>
+                    </div>
+                    <div id="user-info" class="d-none ms-3 align-items-center gap-2">
+                        <span class="fw-bold text-primary" id="logged-in-username"></span>
+                        <button class="btn btn-outline-danger btn-sm rounded-pill" onclick="logout()" data-i18n="btnLogout">התנתק</button>
+                    </div>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- אזור Hero ראשי -->
+    <header class="hero-section text-center mt-5">
+        <div class="container">
+            <h1 class="display-4 fw-bold mb-3 text-white" data-i18n="heroTitle">הקהילה שלנו, בסטנדרט חדש</h1>
+            <p class="lead mb-4 col-lg-8 mx-auto fw-medium text-white" data-i18n="heroSubtitle">פלטפורמה חכמה, נקייה ומודרנית לניהול חיי הקהילה, חיבור בין שכנים, יוזמות ועזרה הדדית.</p>
+            <a href="#cards-section" class="btn btn-light btn-lg text-primary fw-bold px-5 rounded-pill shadow" data-i18n="heroBtn">לגלוש בלוח המודעות</a>
+        </div>
+    </header>
+
+    <!-- אזור הכרטיסיות -->
+    <main id="cards-section" class="container py-5">
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 p-4 bg-white">
+                    <div class="card-body">
+                        <div class="fs-1 mb-3">📌</div>
+                        <h3 class="h5 fw-bold mb-3" data-i18n="card1Title">לוח מודעות כללי</h3>
+                        <p class="text-muted small" data-i18n="card1Text">כל מה שחדש בשכונה: עדכונים, הודעות דחופות, והכרזות לתושבים במקום אחד.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0">
+                        <a href="#posts-container" class="btn btn-outline-primary btn-sm w-100 rounded-pill" data-i18n="card1Btn">צפה במודעות</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 p-4 bg-white">
+                    <div class="card-body">
+                        <div class="fs-1 mb-3">🌴</div>
+                        <h3 class="h5 fw-bold mb-3" data-i18n="card2Title">אירועים ופעילויות</h3>
+                        <p class="text-muted small" data-i18n="card2Text">מפגשים שכונתיים, פעילויות לכל המשפחה, סדנאות ואירועי תרבות קהילתיים.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0">
+                        <a href="#" class="btn btn-outline-primary btn-sm w-100 rounded-pill" data-i18n="card2Btn">לכל האירועים</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 p-4 bg-white">
+                    <div class="card-body">
+                        <div class="fs-1 mb-3">🤝</div>
+                        <h3 class="h5 fw-bold mb-3" data-i18n="card3Title">שולחן עזרה הדדית</h3>
+                        <p class="text-muted small" data-i18n="card3Text">מציעים או מבקשים עזרה? השאלת ציוד, טרמפים, תמיכה וחיזוק הקהילה מבפנים.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0">
+                        <a href="#" class="btn btn-outline-primary btn-sm w-100 rounded-pill" data-i18n="card3Btn">היכנס לעזרה</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 p-4 bg-white">
+                    <div class="card-body">
+                        <div class="fs-1 mb-3">📢</div>
+                        <h3 class="h5 fw-bold mb-3" data-i18n="card4Title">עדכוני הנהלה / וועד</h3>
+                        <p class="text-muted small" data-i18n="card4Text">פרויקטים עתידיים, תחזוקה שוטפת, דוחות שקופים ופניות ישירות לגורמים האחראיים.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0">
+                        <a href="#" class="btn btn-outline-primary btn-sm w-100 rounded-pill" data-i18n="card4Btn">לעדכונים הרשמיים</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- אזור הצגת הפוסטים -->
+        <section class="mt-5 pt-4">
+            <h2 class="h3 fw-bold mb-4 text-center" data-i18n="latestPostsTitle">המודעות האחרונות בלוח</h2>
+            <div id="posts-container" class="row g-4">
+                {% if posts %}
+                    {% for post in posts %}
+                        <div class="col-md-6">
+                            <div class="card p-3 shadow-sm bg-white">
+                                <h4 class="h5 fw-bold text-primary">{{ post.title }}</h4>
+                                <p class="text-secondary mb-2">{{ post.content }}</p>
+                                <div class="d-flex justify-content-between text-muted small mt-2 border-top pt-2 align-items-center">
+                                    <span><span data-i18n="postAuthor">מאת</span>: <strong>{{ post.author.username }}</strong>
+                                        {% if post.author.role == 'business' %}
+                                            <span class="badge bg-warning text-dark ms-2">🏷️ <span data-i18n="localBusiness">עסק מקומי</span>: {{ post.author.business_name or 'לא צויין' }}</span>
+                                        {% endif %}
+                                    </span>
+                                    <span>{{ post.created_at.strftime('%Y-%m-%d %H:%M') if post.created_at else '' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-center text-muted" data-i18n="noPosts">אין עדיין הודעות בלוח. היה הראשון לפרסם!</p>
+                {% endif %}
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal התחברות -->
+    <div class="modal fade" id="loginModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow rounded-4 p-3">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold" data-i18n="loginTitle">התחברות למערכת</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label class="form-label" data-i18n="labelUsername">שם משתמש</label>
+                            <input type="text" class="form-control rounded-pill" id="loginUsername" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" data-i18n="labelPassword">סיסמה</label>
+                            <input type="password" class="form-control rounded-pill" id="loginPassword" required>
+                        </div>
+                        <div id="loginError" class="text-danger small mb-3 d-none"></div>
+                        <button type="submit" class="btn btn-primary w-100 rounded-pill text-white fw-bold mb-3" data-i18n="btnLoginSubmit">התחבר</button>
+                    </form>
+                    <hr class="my-2">
+                    <a href="/auth/google" class="btn btn-outline-dark w-100 rounded-pill d-flex align-items-center justify-content-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48">
+                            <path fill="#EA4335" d="M24 9.5c3.54 0 6.7 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                        </svg>
+                        <span data-i18n="loginGoogle">המשך באמצעות Google</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal הרשמה -->
+    <div class="modal fade" id="registerModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow rounded-4 p-3">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold" data-i18n="registerTitle">הרשמה לקהילה</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="registerForm">
+                        <div class="mb-3">
+                            <label class="form-label" data-i18n="labelUsername">שם משתמש</label>
+                            <input type="text" class="form-control rounded-pill" id="regUsername" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" data-i18n="labelEmail">אימייל</label>
+                            <input type="email" class="form-control rounded-pill" id="regEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" data-i18n="labelPassword">סיסמה</label>
+                            <input type="password" class="form-control rounded-pill" id="regPassword" required>
+                        </div>
+                        
+                        <!-- בחירת סוג משתמש -->
+                        <div class="mb-3">
+                            <label class="form-label" data-i18n="labelRole">אני מתפקד בשכונה כ:</label>
+                            <select class="form-select rounded-pill" id="regUserType" onchange="toggleBusinessFields()" required>
+                                <option value="resident" data-i18n="roleResident">דייר בשכונה</option>
+                                <option value="business" data-i18n="roleBusiness">בעל עסק מקומי</option>
+                            </select>
+                        </div>
+
+                        <!-- שדות נוספים לבעלי עסקים -->
+                        <div id="businessFields" class="d-none border p-3 rounded-4 mb-3 bg-light">
+                            <div class="mb-2">
+                                <label class="form-label small" data-i18n="labelBusinessName">שם העסק</label>
+                                <input type="text" class="form-control rounded-pill" id="regBusinessName">
+                            </div>
+                            <div>
+                                <label class="form-label small" data-i18n="labelCategory">קטגוריה</label>
+                                <select class="form-select rounded-pill" id="regBusinessCategory">
+                                    <option value="food" data-i18n="catFood">אוכל ומסעדות</option>
+                                    <option value="services" data-i18n="catServices">שירותים ותיקונים</option>
+                                    <option value="retail" data-i18n="catRetail">חנויות ומסחר</option>
+                                    <option value="other" data-i18n="catOther">אחר</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="regError" class="text-danger small mb-3 d-none"></div>
+                        <button type="submit" class="btn btn-primary w-100 rounded-pill text-white fw-bold mb-3" data-i18n="btnRegisterSubmit">הירשם</button>
+                    </form>
+                    <hr class="my-2">
+                    <a href="/auth/google" class="btn btn-outline-dark w-100 rounded-pill d-flex align-items-center justify-content-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48">
+                            <path fill="#EA4335" d="M24 9.5c3.54 0 6.7 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                        </svg>
+                        <span data-i18n="loginGoogle">המשך באמצעות Google</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- פוטר -->
+    <footer class="bg-white text-center py-4 border-top mt-5">
+        <div class="container text-muted small">
+            <p class="mb-0" data-i18n="footerText">Neighborhood Board &copy; 2026 | כל הזכויות שמורות לקהילה</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS & Script -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // מילון תרגומים לשפות (עברית, אנגלית, רוסית)
+        const translations = {
+            he: {
+                pageTitle: "Neighborhood Board | לוח שכונתי מתקדם",
+                navHome: "דף הבית",
+                navBoard: "לוח מודעות",
+                navEvents: "אירועים",
+                navMutualAid: "עזרה הדדית",
+                btnLogin: "התחברות",
+                btnRegister: "הרשמה",
+                btnLogout: "התנתק",
+                heroTitle: "הקהילה שלנו, בסטנדרט חדש",
+                heroSubtitle: "פלטפורמה חכמה, נקייה ומודרנית לניהול חיי הקהילה, חיבור בין שכנים, יוזמות ועזרה הדדית.",
+                heroBtn: "לגלוש בלוח המודעות",
+                card1Title: "לוח מודעות כללי",
+                card1Text: "כל מה שחדש בשכונה: עדכונים, הודעות דחופות, והכרזות לתושבים במקום אחד.",
+                card1Btn: "צפה במודעות",
+                card2Title: "אירועים ופעילויות",
+                card2Text: "מפגשים שכונתיים, פעילויות לכל המשפחה, סדנאות ואירועי תרבות קהילתיים.",
+                card2Btn: "לכל האירועים",
+                card3Title: "שולחן עזרה הדדית",
+                card3Text: "מציעים או מבקשים עזרה? השאלת ציוד, טרמפים, תמיכה וחיזוק הקהילה מבפנים.",
+                card3Btn: "היכנס לעזרה",
+                card4Title: "עדכוני הנהלה / וועד",
+                card4Text: "פרויקטים עתידיים, תחזוקה שוטפת, דוחות שקופים ופניות ישירות לגורמים האחראיים.",
+                card4Btn: "לעדכונים הרשמיים",
+                latestPostsTitle: "המודעות האחרונות בלוח",
+                postAuthor: "מאת",
+                localBusiness: "עסק מקומי",
+                noPosts: "אין עדיין הודעות בלוח. היה הראשון לפרסם!",
+                loginTitle: "התחברות למערכת",
+                labelUsername: "שם משתמש",
+                labelPassword: "סיסמה",
+                btnLoginSubmit: "התחבר",
+                loginGoogle: "המשך באמצעות Google",
+                registerTitle: "הרשמה לקהילה",
+                labelEmail: "אימייל",
+                labelRole: "אני מתפקד בשכונה כ:",
+                roleResident: "דייר בשכונה",
+                roleBusiness: "בעל עסק מקומי",
+                labelBusinessName: "שם העסק",
+                labelCategory: "קטגוריה",
+                catFood: "אוכל ומסעדות",
+                catServices: "שירותים ותיקונים",
+                catRetail: "חנויות ומסחר",
+                catOther: "אחר",
+                btnRegisterSubmit: "הירשם",
+                footerText: "Neighborhood Board © 2026 | כל הזכויות שמורות לקהילה"
+            },
+            en: {
+                pageTitle: "Neighborhood Board | Advanced Community Board",
+                navHome: "Home",
+                navBoard: "Board",
+                navEvents: "Events",
+                navMutualAid: "Mutual Aid",
+                btnLogin: "Login",
+                btnRegister: "Register",
+                btnLogout: "Logout",
+                heroTitle: "Our Community, A New Standard",
+                heroSubtitle: "A smart, clean, and modern platform for managing community life, connecting neighbors, initiatives, and mutual aid.",
+                heroBtn: "Browse the Board",
+                card1Title: "General Board",
+                card1Text: "All the neighborhood news: updates, urgent announcements, and resident notices in one place.",
+                card1Btn: "View Posts",
+                card2Title: "Events & Activities",
+                card2Text: "Neighborhood gatherings, family-friendly activities, workshops, and community cultural events.",
+                card2Btn: "All Events",
+                card3Title: "Mutual Aid Table",
+                card3Text: "Offering or asking for help? Equipment lending, rides, support, and strengthening the community from within.",
+                card3Btn: "Get Help",
+                card4Title: "Management / Committee Updates",
+                card4Text: "Future projects, ongoing maintenance, transparent reports, and direct inquiries to authorities.",
+                card4Btn: "Official Updates",
+                latestPostsTitle: "Latest Board Posts",
+                postAuthor: "By",
+                localBusiness: "Local Business",
+                noPosts: "No posts yet. Be the first to publish!",
+                loginTitle: "System Login",
+                labelUsername: "Username",
+                labelPassword: "Password",
+                btnLoginSubmit: "Login",
+                loginGoogle: "Continue with Google",
+                registerTitle: "Community Registration",
+                labelEmail: "Email",
+                labelRole: "I act in the neighborhood as:",
+                roleResident: "Neighborhood Resident",
+                roleBusiness: "Local Business Owner",
+                labelBusinessName: "Business Name",
+                labelCategory: "Category",
+                catFood: "Food & Restaurants",
+                catServices: "Services & Repairs",
+                catRetail: "Retail & Shops",
+                catOther: "Other",
+                btnRegisterSubmit: "Register",
+                footerText: "Neighborhood Board © 2026 | All rights reserved to the community"
+            },
+            ru: {
+                pageTitle: "Neighborhood Board | Продвинутая доска объявлений",
+                navHome: "Главная",
+                navBoard: "Объявления",
+                navEvents: "Мероприятия",
+                navMutualAid: "Взаимопомощь",
+                btnLogin: "Войти",
+                btnRegister: "Регистрация",
+                btnLogout: "Выйти",
+                heroTitle: "Наша община на новом уровне",
+                heroSubtitle: "Умная, чистая и современная платформа для управления жизнью сообщества, связи между соседями и взаимопомощи.",
+                heroBtn: "Смотреть доску",
+                card1Title: "Общая доска",
+                card1Text: "Все новости района: обновления, срочные сообщения и объявления жителей в одном месте.",
+                card1Btn: "Смотреть посты",
+                card2Title: "Мероприятия",
+                card2Text: "Соседские встречи, семейные мероприятия, мастер-классы и культурные события.",
+                card2Btn: "Все события",
+                card3Title: "Взаимопомощь",
+                card3Text: "Предлагаете или просите о помощи? Аренда оборудования, поездки, поддержка и укрепление сообщества.",
+                card3Btn: "Войти",
+                card4Title: "Новости комитета",
+                card4Text: "Будущие проекты, текущее обслуживание, прозрачные отчеты и прямые обращения к руководству.",
+                card4Btn: "Официально",
+                latestPostsTitle: "Последние объявления",
+                postAuthor: "Автор",
+                localBusiness: "Местный бизнес",
+                noPosts: "Пока нет записей. Будьте первыми!",
+                loginTitle: "Вход в систему",
+                labelUsername: "Имя пользователя",
+                labelPassword: "Пароль",
+                btnLoginSubmit: "Войти",
+                loginGoogle: "Продолжить с Google",
+                registerTitle: "Регистрация в сообществе",
+                labelEmail: "Эл. почта",
+                labelRole: "Я в районе как:",
+                roleResident: "Житель",
+                roleBusiness: "Владелец бизнеса",
+                labelBusinessName: "Название бизнеса",
+                labelCategory: "Категория",
+                catFood: "Еда и рестораны",
+                catServices: "Услуги и ремонт",
+                catRetail: "Магазины и торговля",
+                catOther: "Другое",
+                btnRegisterSubmit: "Зарегистрироваться",
+                footerText: "Neighborhood Board © 2026 | Все права защищены сообществом"
+            }
+        };
+
+        function changeLanguage(lang) {
+            localStorage.setItem("preferred_language", lang);
+            const htmlRoot = document.getElementById("htmlRoot");
+            const bootstrapCSS = document.getElementById("bootstrapCSS");
+
+            // שינוי כיוון השפה וגליון העיצוב של Bootstrap לפי הצורך (RTL לעברית, LTR לאנגלית ולרוסית)
+            if (lang === "he") {
+                htmlRoot.setAttribute("dir", "rtl");
+                htmlRoot.setAttribute("lang", "he");
+                bootstrapCSS.setAttribute("href", "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css");
+            } else {
+                htmlRoot.setAttribute("dir", "ltr");
+                htmlRoot.setAttribute("lang", lang);
+                bootstrapCSS.setAttribute("href", "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css");
+            }
+
+            // עדכון כל הטקסטים במסמך שיש להם מפתח מתאים
+            document.querySelectorAll("[data-i18n]").forEach(el => {
+                const key = el.getAttribute("data-i18n");
+                if (translations[lang] && translations[lang][key]) {
+                    el.textContent = translations[lang][key];
+                }
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedUser = localStorage.getItem("username");
+            if (savedUser) {
+                showLoggedInState(savedUser);
+            }
+
+            // טעינת שפה שמורה או ברירת מחדל עברית
+            const savedLang = localStorage.getItem("preferred_language") || "he";
+            document.getElementById("languageSelect").value = savedLang;
+            changeLanguage(savedLang);
+        });
+
+        function toggleBusinessFields() {
+            const userType = document.getElementById("regUserType").value;
+            const businessFields = document.getElementById("businessFields");
+            if (userType === "business") {
+                businessFields.classList.remove("d-none");
+            } else {
+                businessFields.classList.add("d-none");
+            }
+        }
+
+        // טיפול בהרשמה
+        document.getElementById("registerForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const username = document.getElementById("regUsername").value;
+            const email = document.getElementById("regEmail").value;
+            const password = document.getElementById("regPassword").value;
+            const role = document.getElementById("regUserType").value;
+            const business_name = document.getElementById("regBusinessName").value;
+            const business_category = document.getElementById("regBusinessCategory").value;
+            const errorDiv = document.getElementById("regError");
+
+            try {
+                const response = await fetch("/api/register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, email, password, role, business_name, business_category })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert("ההרשמה בוצעה בהצלחה! כעת תוכל להתחבר.");
+                    location.reload();
+                } else {
+                    errorDiv.textContent = data.error || "שגיאה בהרשמה";
+                    errorDiv.classList.remove("d-none");
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        // טיפול בהתחברות
+        document.getElementById("loginForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const username = document.getElementById("loginUsername").value;
+            const password = document.getElementById("loginPassword").value;
+            const errorDiv = document.getElementById("loginError");
+
+            try {
+                const response = await fetch("/api/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem("username", data.user.username);
+                    localStorage.setItem("role", data.user.role);
+                    showLoggedInState(data.user.username);
+                    
+                    const modalEl = document.getElementById('loginModal');
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    modal.hide();
+                } else {
+                    errorDiv.textContent = data.error || "שגיאה בהתחברות";
+                    errorDiv.classList.remove("d-none");
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        function showLoggedInState(username) {
+            document.getElementById("auth-buttons").classList.add("d-none");
+            const userInfo = document.getElementById("user-info");
+            userInfo.classList.remove("d-none");
+            userInfo.classList.add("d-flex");
+            const currentLang = localStorage.getItem("preferred_language") || "he";
+            const greeting = currentLang === "ru" ? "Привет, " : (currentLang === "en" ? "Hello, " : "שלום, ");
+            document.getElementById("logged-in-username").textContent = `${greeting}${username}`;
+        }
+
+        function logout() {
+            localStorage.removeItem("username");
+            localStorage.removeItem("role");
+            location.reload();
+        }
+    </script>
+</body>
+</html>
