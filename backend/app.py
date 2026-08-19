@@ -23,13 +23,14 @@ bcrypt = Bcrypt(app)
 oauth = OAuth(app)
 google = oauth.register(
     name='google',
-    client_id='391320368487-5p04s8r01b6u52fea3jc61cjfso0uane.apps.googleusercontent.com',
-    client_secret='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',
+    client_id=os.getenv("GOOGLE_CLIENT_ID"),
+    client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
     client_kwargs={
         'scope': 'openid email profile'
     }
 )
+
 
 with app.app_context():
     db.create_all()
