@@ -1,1 +1,25 @@
+# Virtual Environments
+venv/
+*/venv/
+env/
+*/env/
+
+# Environment Variables & Secrets (CRITICAL)
 .env
+*.env
+backend/.env
+
+# SQLite Databases & Local Instance
+instance/
+*/instance/
+*.db
+*.sqlite3
+
+# Python Cache
+__pycache__/
+*/__pycache__/
+*.pyc
+
+# Operating System Files
+.DS_Store
+Thumbs.db
