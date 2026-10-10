@@ -97,6 +97,6 @@
 
 המערכת מאוחסנת ורצה בשרת ענן:
 - שרת: AWS EC2 (Ubuntu 24.04.4 LTS)
-- כתובת ציבורית חיה: http://13.60.215.103:5000
+- כתובת ציבורית חיה: http://13.62.11.208:5000
 - פקודת הרצת ייצור (Gunicorn Multi-threading):
   gunicorn -w 2 --threads 4 --timeout 60 -b 0.0.0.0:5000 app:app --daemon
